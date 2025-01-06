@@ -23,7 +23,7 @@ const kafka_notification_topic = 'notifications'
 
 const { Kafka } = require('kafkajs')
 
-const kafks = new Kafka({
+const kafka = new Kafka({
   clientId: kafka_clientId,
   brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT]
 })
