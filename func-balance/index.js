@@ -32,6 +32,7 @@ const kafks = new Kafka({
 
 const handle = async (context, body) => {
   context.log.info("query", context.query);
+  context.log.info("method", context.method);
   context.log.info("body", body);
 
   // If the request is an HTTP POST, the context will contain the request body

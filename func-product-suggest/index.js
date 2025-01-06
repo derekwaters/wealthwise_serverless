@@ -15,22 +15,63 @@
  * @param {string} context.httpVersion the HTTP protocol version
  * See: https://github.com/knative/func/blob/main/docs/function-developers/nodejs.md#the-context-object
  */
+
+const kafka_clientId = 'wealthwise-transact'
+const kafka_groupId = 'wealthwise-group'
+const kafka_transaction_topic = 'transactions'
+const kafka_notification_topic = 'notifications'
+const kafka_ledger_topic = 'ledger'
+
+const { Kafka } = require('kafkajs')
+
+const kafks = new Kafka({
+  clientId: kafka_clientId,
+  brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT]
+})
+
+
 const handle = async (context, body) => {
   // YOUR CODE HERE
   context.log.info("query", context.query);
   context.log.info("body", body);
 
-  // If the request is an HTTP POST, the context will contain the request body
-  if (context.method === 'POST') {
-    return { body };
-  } else if (context.method === 'GET') {
-    // If the request is an HTTP GET, the context will include a query string, if it exists
-    return {
-      query: context.query,
+  var recommendation = None;
+
+  // Search through the transactions for anything affecting balance
+  const consumer = kafka.consumer({ groupId: kafka_groupId});
+
+  await consumer.connect();
+  await consumer.subscribe({ topic: kafka_notification_topic, fromBeginning: false});
+
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      if (message.value.userId == body.userId) {
+        if (message.messageType == 'balance') {
+          if (message.balance > 100000) {
+            recommendation = "Consider investing in property!";
+          } else if (message.balance > 10000) {
+            recommendation = "Consider investing in shares!";
+          }
+        }
+      }
     }
-  } else {
-    return { statusCode: 405, statusMessage: 'Method not allowed' };
+  })
+
+  // If the request is an HTTP POST, the context will contain the request body
+  if (recommendation) {
+
+    const producer = kafka.producer();
+
+    await producer.connect();
+    await producer.send({
+      topic: kafka_notification_topic,
+      messages: [
+        { userId: body.userId, messageType: 'product_advice', message: recommendation }
+      ]
+    });
+    await producer.disconnect();
   }
+  return { result: "ok" };
 }
 
 // Export the function
