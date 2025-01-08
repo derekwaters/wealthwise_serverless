@@ -1,0 +1,7 @@
+specVersion: 0.36.0
+name: func-test-loopback
+runtime: node
+registry: localhost:5000
+created: 2025-01-08T12:58:25.316280649+11:00
+build:
+  builder: s2i

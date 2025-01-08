@@ -25,29 +25,41 @@ const { Kafka } = require('kafkajs')
 
 const kafka = new Kafka({
   clientId: kafka_clientId,
-  brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT]
+  brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT],
+  ssl: false
 })
 
 const handle = async (context, body) => {
   context.log.info("query", context.query);
-  context.log.info("body", body);
+  context.log.info("context", context);
+  context.log.info(context);
+  context.log.info("Using Kafka Broker: " + process.env.KAFKA_BROKER_HOST + ":" + process.env.KAFKA_BROKER_PORT);
+
 
   // If the request is an HTTP POST, the context will contain the request body
   if (context.method === 'POST') {
-    switch (body.type) {
+    switch (context.body.type) {
       case 'deposit':
       case 'expense':
       case 'target':
+
+        context.log.info("got a transaction type, so let's post a message to Kafka");
+        var messageList = [
+          {
+            value: JSON.stringify(context.body)
+          }];
+        context.log.info(messageList);
+
         // Add to the transactions Kafka topic
         const producer = kafka.producer();
 
         await producer.connect();
+        context.log.info("Now connected");
         await producer.send({
           topic: kafka_transaction_topic,
-          messages: [
-            body
-          ]
+          messages: messageList
         });
+        context.log.info("Now sent");
         await producer.disconnect();
         return { result: "ok" };
 
