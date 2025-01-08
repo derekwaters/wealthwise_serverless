@@ -1,0 +1,14 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: test-events
+  namespace: wealthwise
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "2"
+        autoscaling.knative.dev/targer: "10"
+    spec:
+      containers:
+        - image: quay.io/rh-ee-dwaters/func-test-events

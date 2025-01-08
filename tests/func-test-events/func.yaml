@@ -1,5 +1,8 @@
 specVersion: 0.36.0
 name: func-test-events
 runtime: node
+registry: quay.io/rh-ee-dwaters/
 created: 2025-01-08T12:58:41.2309982+11:00
 invoke: cloudevent
+build:
+  builder: s2i

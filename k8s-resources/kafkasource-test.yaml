@@ -1,0 +1,15 @@
+apiVersion: sources.knative.dev/v1
+kind: KafkaSource
+metadata:
+  name: test-kafkasource
+spec:
+  consumerGroup: knative-group
+  bootstrapServers:
+    - kafka-cluster-kafka-bootstrap.wealthwise.svc.cluster.local:9092
+  topics:
+    - test-topic
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: test-events
