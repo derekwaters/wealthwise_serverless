@@ -36,10 +36,9 @@ curl -X POST -d '{"type":"deposit","amount":1000}' -H "Content-Type: application
 3) Install the streams for Apache Kafka Operator
 4) Install the KNative Serving CR in the knative-serving namespace?!
 5) Install the KNative Eventing CR in the knative-eventing namespace?!
-6) 
+6) Install the KNative Kafka CR in the knative-eventing namespace
 
-To add:
-Build the images and stuff, then in OpenShift do the steps you didn't save, then:
+Build the images and push them to quay
 
 TODO: Setup Kafka ()
 
@@ -49,26 +48,27 @@ Create a topic for testing 'test-topic' (kafkatopic-test.yaml)
 
 
 Scaleup the Machineset Count to add a new worker node...
-
-Add the Kafka eventing source:
-https://knative.dev/docs/eventing/sources/kafka-source/
-
-oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-controller.yaml
-oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-source.yaml
-oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-channel.yaml
-oc get deployments.apps,statefulsets.apps -n knative-eventing
-
-oc adm policy add-scc-to-user privileged system:serviceaccount:knative-eventing:knative-kafka-source-data-plane
-oc adm policy add-scc-to-user privileged system:serviceaccount:knative-eventing:knative-kafka-channel-data-plane
-
-Edit the StatefulSet for the kafka-source-dispatcher, kafka-channel-dispatcher, Deployments for kafka-channel-receiver and add:
-spec:
-    template:
-        metadata:
-            annotations:
-                openshift.io/required-scc: "privileged"
-
-
+# DON'T DO ANY OF THIS - USE THE KNative Kafka CR you idiot
+# 
+# Add the Kafka eventing source:
+# https://knative.dev/docs/eventing/sources/kafka-source/
+# 
+# oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-controller.yaml
+# oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-source.yaml
+# oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-channel.yaml
+# oc get deployments.apps,statefulsets.apps -n knative-eventing
+# 
+# oc adm policy add-scc-to-user privileged system:serviceaccount:knative-eventing:knative-kafka-source-data-plane
+# oc adm policy add-scc-to-user privileged system:serviceaccount:knative-eventing:knative-kafka-channel-data-plane
+# 
+# Edit the StatefulSet for the kafka-source-dispatcher, kafka-channel-dispatcher, Deployments for kafka-channel-receiver and add:
+# spec:
+#     template:
+#         metadata:
+#             annotations:
+#                 openshift.io/required-scc: "privileged"
+# 
+# 
 
 Add the Server-test-events (service-test-events.yaml)
 Add the KafkaSource (kafkasource-test.yaml)
@@ -80,3 +80,7 @@ kafka-cluster-kafka-bootstrap.wealthwise.svc.cluster.local:9092
 
 // Now run a thing to send a thing
 // 
+
+kubectl -n wealthwise run kafka-producer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list kafka-cluster-kafka-bootstrap:9092 --topic test-topic
+
+kubectl -n wealthwise run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap:9092 --topic test-topic

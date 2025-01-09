@@ -4,7 +4,7 @@ set -e
 trap '{ echo "" ; exit 1; }' INT
 
 KAFKA_TOPIC=${1:-'test-topic'}
-KAFKA_CLUSTER_NS=${2:-'welathwise'}
+KAFKA_CLUSTER_NS=${2:-'wealthwise'}
 KAFKA_CLUSTER_NAME=${3:-'kafka-cluster'}
 
 
