@@ -27,6 +27,17 @@ kn func run --registry "localhost:5000" -e KAFKA_BROKER_HOST=kafka_broker -e KAF
 # Test it
 curl -X POST -d '{"type":"deposit","amount":1000}' -H "Content-Type: application/json" http://localhost:8080
 
+
+
+
+# Setting up in OpenShift
+1) Create the blank OpenShift Environment (use large node sizes!)
+2) Install the OpenShift Serverless Operator
+3) Install the streams for Apache Kafka Operator
+4) Install the KNative Serving CR in the knative-serving namespace?!
+5) Install the KNative Eventing CR in the knative-eventing namespace?!
+6) 
+
 To add:
 Build the images and stuff, then in OpenShift do the steps you didn't save, then:
 
@@ -67,3 +78,5 @@ And they should be received by the events service?
 kafka-cluster-kafka-bootstrap.wealthwise.svc.cluster.local:9092
 
 
+// Now run a thing to send a thing
+// 
