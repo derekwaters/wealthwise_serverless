@@ -36,15 +36,16 @@ curl -X POST -d '{"type":"deposit","amount":1000}' -H "Content-Type: application
 3) Install the streams for Apache Kafka Operator
 4) Install the KNative Serving CR in the knative-serving namespace?!
 5) Install the KNative Eventing CR in the knative-eventing namespace?!
-6) Install the KNative Kafka CR in the knative-eventing namespace
+6) Create a 'kafka' namespace/project
+7) Create a 'wealthwise' namespace/project
+8) Create a KafkaCluster called 'kafka-cluster' in the kafka namespace    (kafka-cluster.yaml)
+9) Create a topic for testing 'test-topic' (kafkatopic-test.yaml)
+10) Install the KNative Kafka CR in the knative-eventing namespace, ensuring that channel, source and broker are enabled (use the Kafka bootstrap server address)   (knativekafka-definition.yaml)
 
-Build the images and push them to quay
-
-TODO: Setup Kafka ()
-
-Create a KafkaCluster called 'kafka-cluster' in the wealthwise namespace    (kafka-cluster.yaml)
-Create a topic for testing 'test-topic' (kafkatopic-test.yaml)
-
+11) Add the Server-test-events (service-test-events.yaml)
+12) Add the KafkaSource (kafkasource-test.yaml)
+You should now be able to push stuff to Kafka using tests/generate-kafka-events.sh
+And they should be received by the events service?
 
 
 Scaleup the Machineset Count to add a new worker node...
@@ -70,17 +71,12 @@ Scaleup the Machineset Count to add a new worker node...
 # 
 # 
 
-Add the Server-test-events (service-test-events.yaml)
-Add the KafkaSource (kafkasource-test.yaml)
-You should now be able to push stuff to Kafka using tests/generate-kafka-events.sh
-And they should be received by the events service?
-
-kafka-cluster-kafka-bootstrap.wealthwise.svc.cluster.local:9092
+kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
 
 
 // Now run a thing to send a thing
 // 
 
-kubectl -n wealthwise run kafka-producer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list kafka-cluster-kafka-bootstrap:9092 --topic test-topic
+kubectl -n wealthwise run kafka-producer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic test-topic
 
-kubectl -n wealthwise run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap:9092 --topic test-topic
+kubectl -n wealthwise run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic test-topic
