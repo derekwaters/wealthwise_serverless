@@ -31,9 +31,10 @@ const kafka = new Kafka({
 })
 
 const handle = async (context, event) => {
-  context.log.info("query", context.query);
-  context.log.info("context", context);
-  context.log.info(context);
+  context.log.info(context.body);
+  context.log.info(context.body.userId);
+  context.log.info(context.body.type);
+  context.log.info(context.body.amount);
   context.log.info("Using Kafka Broker: " + process.env.KAFKA_BROKER);
 
 
