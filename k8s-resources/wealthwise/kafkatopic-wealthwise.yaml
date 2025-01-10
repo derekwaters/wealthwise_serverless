@@ -1,0 +1,40 @@
+---
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: wealthwise-transactions
+  labels:
+    strimzi.io/cluster: kafka-cluster
+spec:
+  partitions: 10
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: wealthwise-ledger
+  labels:
+    strimzi.io/cluster: kafka-cluster
+spec:
+  partitions: 10
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: wealthwise-balance-update
+  labels:
+    strimzi.io/cluster: kafka-cluster
+spec:
+  partitions: 10
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: wealthwise-user-notifications
+  labels:
+    strimzi.io/cluster: kafka-cluster
+spec:
+  partitions: 10
+  replicas: 1

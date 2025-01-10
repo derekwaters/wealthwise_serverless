@@ -1,0 +1,10 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: wealthwise-cost-suggest
+  namespace: wealthwise
+spec:
+  template:
+    spec:
+      containers:
+        - image: quay.io/rh-ee-dwaters/func-cost-suggest
