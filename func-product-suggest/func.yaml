@@ -1,7 +1,7 @@
 specVersion: 0.36.0
 name: func-product-suggest
 runtime: node
-registry: localhost:5000
+registry: quay.io/rh-ee-dwaters
 created: 2024-12-13T16:10:08.937145473+11:00
 build:
   builder: s2i

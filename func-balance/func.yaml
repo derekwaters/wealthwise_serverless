@@ -1,7 +1,7 @@
 specVersion: 0.36.0
 name: func-balance
 runtime: node
-registry: localhost:5000
+registry: quay.io/rh-ee-dwaters
 created: 2024-12-13T16:09:27.40615162+11:00
 build:
   builder: s2i

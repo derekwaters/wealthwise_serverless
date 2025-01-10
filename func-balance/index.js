@@ -66,11 +66,11 @@ const handle = async (context, event) => {
     messageType: 'balance',
     balance: currentBalance,
     date: Date.now()
-  }
+  };
   var newBalance = {
     userId: event.data.userId,
     balance: currentBalance
-  }
+  };
 
   await producer.connect();
   await producer.send({
@@ -84,7 +84,7 @@ const handle = async (context, event) => {
     messages: [
       { value: JSON.stringify(newBalance) }
     ]
-  })
+  });
   await producer.disconnect();
   return { result: "ok" };
 }

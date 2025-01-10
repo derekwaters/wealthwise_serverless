@@ -2,6 +2,7 @@
 apiVersion: kafka.strimzi.io/v1beta1
 kind: KafkaTopic
 metadata:
+  namespace: wealthwise
   name: wealthwise-transactions
   labels:
     strimzi.io/cluster: kafka-cluster
@@ -12,6 +13,7 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta1
 kind: KafkaTopic
 metadata:
+  namespace: wealthwise
   name: wealthwise-balance-update
   labels:
     strimzi.io/cluster: kafka-cluster
@@ -22,6 +24,7 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta1
 kind: KafkaTopic
 metadata:
+  namespace: wealthwise
   name: wealthwise-user-notifications
   labels:
     strimzi.io/cluster: kafka-cluster

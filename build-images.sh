@@ -4,31 +4,38 @@
 if [ -z "$BUILD_PLATFORM"]; then set BUILD_PLATFORM="linux/arm64"; fi
 
 pushd func-balance
-kn func build --builder s2i --platform "$BUILD_PLATFORM" --registry "quay.io/rh-ee-dwaters"
+npm install
+kn func build --platform "$BUILD_PLATFORM"
 popd
 
 pushd func-check-notifications
-kn func build --builder s2i --platform "$BUILD_PLATFORM" --registry "quay.io/rh-ee-dwaters"
+npm install
+kn func build --platform "$BUILD_PLATFORM"
 popd
 
 pushd func-cost-suggest
-kn func build --builder s2i --platform "$BUILD_PLATFORM" --registry "quay.io/rh-ee-dwaters"
+npm install
+kn func build --platform "$BUILD_PLATFORM"
 popd
 
 pushd func-product-suggest
-kn func build --builder s2i --platform "$BUILD_PLATFORM" --registry "quay.io/rh-ee-dwaters"
+npm install
+kn func build --platform "$BUILD_PLATFORM"
 popd
 
 pushd func-transact
-kn func build --builder s2i --platform "$BUILD_PLATFORM" --registry "quay.io/rh-ee-dwaters"
+npm install
+kn func build --platform "$BUILD_PLATFORM"
 popd
 
 pushd tests/func-test-events
-kn func build --builder s2i --platform "$BUILD_PLATFORM" --registry "quay.io/rh-ee-dwaters"
+npm install
+kn func build --platform "$BUILD_PLATFORM"
 popd
 
 pushd tests/func-test-loopback
-kn func build --builder s2i --platform "$BUILD_PLATFORM" --registry "quay.io/rh-ee-dwaters"
+npm install
+kn func build --platform "$BUILD_PLATFORM"
 popd
 
 docker push quay.io/rh-ee-dwaters/func-test-loopback:latest
