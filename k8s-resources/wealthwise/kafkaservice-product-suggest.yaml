@@ -8,3 +8,6 @@ spec:
     spec:
       containers:
         - image: quay.io/rh-ee-dwaters/func-product-suggest
+          env:
+            - name: KAFKA_BROKER_URL
+              value: kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092

@@ -18,22 +18,23 @@
 
 const kafka_clientId = 'wealthwise-transact'
 const kafka_groupId = 'wealthwise-group'
-const kafka_transaction_topic = 'transactions'
-const kafka_notification_topic = 'notifications'
+const kafka_transaction_topic = 'wealthwise-transactions'
+const kafka_notification_topic = 'wealthwise-user-notifications'
+const kafka_balance_update_topic = 'wealthwise-balance-update'
 
 const { Kafka } = require('kafkajs')
 
 const kafka = new Kafka({
   clientId: kafka_clientId,
-  brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT],
+  brokers: [process.env.KAFKA_BROKER],
   ssl: false
 })
 
-const handle = async (context, body) => {
+const handle = async (context, event) => {
   context.log.info("query", context.query);
   context.log.info("context", context);
   context.log.info(context);
-  context.log.info("Using Kafka Broker: " + process.env.KAFKA_BROKER_HOST + ":" + process.env.KAFKA_BROKER_PORT);
+  context.log.info("Using Kafka Broker: " + process.env.KAFKA_BROKER);
 
 
   // If the request is an HTTP POST, the context will contain the request body
@@ -41,7 +42,6 @@ const handle = async (context, body) => {
     switch (context.body.type) {
       case 'deposit':
       case 'expense':
-      case 'target':
 
         context.log.info("got a transaction type, so let's post a message to Kafka");
         var messageList = [
@@ -63,6 +63,8 @@ const handle = async (context, body) => {
         await producer.disconnect();
         return { result: "ok" };
 
+        // TODO: Move this to a new get-notifications function
+        /*
       case 'notification_check':
         // Get any notifications
         const consumer = kafka.consumer({ groupId: kafka_groupId});
@@ -79,13 +81,9 @@ const handle = async (context, body) => {
         })
 
         return { result: "ok", notifications: notifications };
+        */
     }
     return { statusCode: 405, statusMessage: 'Invalid event type' };
-  } else if (context.method === 'GET') {
-    // If the request is an HTTP GET, the context will include a query string, if it exists
-    return {
-      query: context.query,
-    }
   } else {
     return { statusCode: 405, statusMessage: 'Method not allowed' };
   }

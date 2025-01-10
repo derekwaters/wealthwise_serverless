@@ -18,61 +18,75 @@
 
 const kafka_clientId = 'wealthwise-transact'
 const kafka_groupId = 'wealthwise-group'
-const kafka_transaction_topic = 'transactions'
-const kafka_notification_topic = 'notifications'
-const kafka_ledger_topic = 'ledger'
+const kafka_transaction_topic = 'wealthwise-transactions'
+const kafka_notification_topic = 'wealthwise-user-notifications'
+const kafka_balance_update_topic = 'wealthwise-balance-update'
 
 const { Kafka } = require('kafkajs')
 
 const kafka = new Kafka({
   clientId: kafka_clientId,
-  brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT]
+  brokers: [process.env.KAFKA_BROKER],
+  ssl: false
 })
 
 
-const handle = async (context, body) => {
+const handle = async (context, event) => {
+  // This function should be triggered by a Kafka event from the transactions topic
+  // event.data. will contain the Kafka data
   context.log.info("query", context.query);
-  context.log.info("method", context.method);
-  context.log.info("body", body);
+  context.log.info("event", event);
 
-  // If the request is an HTTP POST, the context will contain the request body
-  if (context.method === 'POST') {
-    // Get all the matching events
-    var currentBalance = 0;
+  // Get all the matching events
+  var currentBalance = 0;
 
-    // Search through the transactions for anything affecting balance
-    const consumer = kafka.consumer({ groupId: kafka_groupId});
+  // Search through the transactions for anything affecting balance
+  const consumer = kafka.consumer({ groupId: kafka_groupId});
 
-    await consumer.connect();
-    await consumer.subscribe({ topic: kafka_ledger_topic, fromBeginning: true});
+  await consumer.connect();
+  await consumer.subscribe({ topic: kafka_transaction_topic, fromBeginning: true});
 
-    await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
-        if (message.value.userId == body.userId) {
-          if (message.type == 'deposit') {
-            currentBalance += message.amount;
-          } else if (message.type == 'expense') {
-            currentBalance -= message.amount;
-          }
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      if (message.value.userId == body.userId) {
+        if (message.type == 'deposit') {
+          currentBalance += message.amount;
+        } else if (message.type == 'expense') {
+          currentBalance -= message.amount;
         }
       }
-    })
+    }
+  })
 
-    // Add a notification message
-    const producer = kafka.producer();
+  // Add a notification message
+  const producer = kafka.producer();
 
-    await producer.connect();
-    await producer.send({
-      topic: kafka_notification_topic,
-      messages: [
-        { userId: body.userId, messageType: 'balance', balance: currentBalance }
-      ]
-    });
-    await producer.disconnect();
-    return { result: "ok" };
-  } else {
-    return { statusCode: 405, statusMessage: 'Method not allowed' };
+  var newNotification = {
+    userId: event.data.userId,
+    messageType: 'balance',
+    balance: currentBalance,
+    date: Date.now()
   }
+  var newBalance = {
+    userId: event.data.userId,
+    balance: currentBalance
+  }
+
+  await producer.connect();
+  await producer.send({
+    topic: kafka_notification_topic,
+    messages: [
+      { value: JSON.stringify(newNotification) }
+    ]
+  });
+  await producer.send({
+    topic: kafka_balance_update_topic,
+    messages: [
+      { value: JSON.stringify(newBalance) }
+    ]
+  })
+  await producer.disconnect();
+  return { result: "ok" };
 }
 
 // Export the function

@@ -18,55 +18,56 @@
 
 const kafka_clientId = 'wealthwise-transact'
 const kafka_groupId = 'wealthwise-group'
-const kafka_transaction_topic = 'transactions'
-const kafka_notification_topic = 'notifications'
-const kafka_ledger_topic = 'ledger'
+const kafka_transaction_topic = 'wealthwise-transactions'
+const kafka_notification_topic = 'wealthwise-user-notifications'
+const kafka_ledger_topic = 'wealthwise-ledger'
+const kafka_balance_update_topic = 'wealthwise-balance-update'
 
 const { Kafka } = require('kafkajs')
 
 const kafka = new Kafka({
   clientId: kafka_clientId,
-  brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT]
+  brokers: [process.env.KAFKA_BROKER],
+  ssl: false
 })
 
 
-
-const handle = async (context, body) => {
-  // YOUR CODE HERE
+const handle = async (context, event) => {
+  // This function should be triggered by a Kafka event from the transactions topic
+  // event.data. will contain the Kafka data
   context.log.info("query", context.query);
-  context.log.info("body", body);
+  context.log.info("event", event);
 
-  // If the request is an HTTP POST, the context will contain the request body
-  if (context.method === 'POST') {
-
-    var recommendation = null;
-    if (body.type == 'expense') {
-      if (body.amount < 100) {
-        // Recommend a top-up saver
-        recommendation = 'Consider a top-up saver account!';
-      } else if (body.amount > 2000 && body.vendor == 'bank') {
-        // Recommend a home loan evaluation
-        recommendation = 'Consider a review of your current home loan provider'
-      }
-      if (recommendation) {
-        const producer = kafka.producer();
-
-        await producer.connect();
-        await producer.send({
-          topic: kafka_notification_topic,
-          messages: [
-            { userId: body.userId, messageType: 'recommendation', message: recommendation }
-          ]
-        });
-        await producer.disconnect();
-      }
+  var recommendation = null;
+  if (event.data.type == 'expense') {
+    if (event.data.amount < 100) {
+      // Recommend a top-up saver
+      recommendation = 'Consider a top-up saver account!';
+    } else if (event.data.amount > 2000 && event.data.vendor == 'bank') {
+      // Recommend a home loan evaluation
+      recommendation = 'Consider a review of your current home loan provider'
     }
+    if (recommendation) {
+      const producer = kafka.producer();
 
-    // Add a notification message
-    return { result: "ok" };
-  } else {
-    return { statusCode: 405, statusMessage: 'Method not allowed' };
+      var newMsg = {
+        userId: event.data.userId,
+        messageType: 'recommendation',
+        message: recommendation,
+        date: Date.now()
+      };
+
+      await producer.connect();
+      await producer.send({
+        topic: kafka_notification_topic,
+        messages: [
+          { value: JSON.stringify(newMsg) }
+        ]
+      });
+      await producer.disconnect();
+    }
   }
+  return { result: "ok" };
 }
 
 // Export the function

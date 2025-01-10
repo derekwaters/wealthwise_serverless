@@ -18,47 +18,40 @@
 
 const kafka_clientId = 'wealthwise-transact'
 const kafka_groupId = 'wealthwise-group'
-const kafka_transaction_topic = 'transactions'
-const kafka_notification_topic = 'notifications'
-const kafka_ledger_topic = 'ledger'
+const kafka_transaction_topic = 'wealthwise-transactions'
+const kafka_notification_topic = 'wealthwise-user-notifications'
+const kafka_ledger_topic = 'wealthwise-ledger'
+const kafka_balance_update_topic = 'wealthwise-balance-update'
 
 const { Kafka } = require('kafkajs')
 
 const kafka = new Kafka({
   clientId: kafka_clientId,
-  brokers: [process.env.KAFKA_BROKER_HOST + ':' + process.env.KAFKA_BROKER_PORT]
+  brokers: [process.env.KAFKA_BROKER],
+  ssl: false
 })
 
-
-const handle = async (context, body) => {
-  // YOUR CODE HERE
+const handle = async (context, event) => {
+  // This function should be event triggered based on receiving balance-update Kafka messages
+  // event.data. should contain all the 
   context.log.info("query", context.query);
-  context.log.info("body", body);
+  context.log.info("event", event);
 
   var recommendation = None;
-
-  // Search through the transactions for anything affecting balance
-  const consumer = kafka.consumer({ groupId: kafka_groupId});
-
-  await consumer.connect();
-  await consumer.subscribe({ topic: kafka_notification_topic, fromBeginning: false});
-
-  await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
-      if (message.value.userId == body.userId) {
-        if (message.messageType == 'balance') {
-          if (message.balance > 100000) {
-            recommendation = "Consider investing in property!";
-          } else if (message.balance > 10000) {
-            recommendation = "Consider investing in shares!";
-          }
-        }
-      }
-    }
-  })
-
-  // If the request is an HTTP POST, the context will contain the request body
+  if (event.data.balance > 100000) {
+    recommendation = "Consider investing in property!";
+  } else if (event.data.balance > 10000) {
+    recommendation = "Consider investing in shares!";
+  }
+  
   if (recommendation) {
+
+    var newUserMessage = {
+      userId: event.data.userId,
+      messageType: 'product_advice',
+      message: recommendation,
+      date: Date.now()
+    };
 
     const producer = kafka.producer();
 
@@ -66,7 +59,7 @@ const handle = async (context, body) => {
     await producer.send({
       topic: kafka_notification_topic,
       messages: [
-        { userId: body.userId, messageType: 'product_advice', message: recommendation }
+        { value: JSON.stringify(newUserMessage) }
       ]
     });
     await producer.disconnect();
