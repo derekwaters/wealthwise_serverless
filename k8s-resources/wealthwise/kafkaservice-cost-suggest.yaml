@@ -9,5 +9,5 @@ spec:
       containers:
         - image: quay.io/rh-ee-dwaters/func-cost-suggest
           env:
-            - name: KAFKA_BROKER_URL
+            - name: KAFKA_BROKER
               value: kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
