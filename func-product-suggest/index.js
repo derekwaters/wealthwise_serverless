@@ -1,3 +1,4 @@
+const { CloudEvent } = require('cloudevents');
 /**
  * Your HTTP handling function, invoked with each request. This is an example
  * function that echoes its input to the caller, and returns an error if
@@ -32,37 +33,44 @@ const kafka = new Kafka({
 })
 
 const handle = async (context, event) => {
-  // This function should be event triggered based on receiving balance-update Kafka messages
-  // event.data. should contain all the 
-  context.log.info("query", context.query);
-  context.log.info("event", event);
+  // This function should be triggered by a Kafka event from the transactions topic
+  // event is a CloudEvent. Kafka can handle any data, so we'll have to convert
+  // the event.data Buffer into an object via JSON.
+  //
+  context.log.info(event);
+  var dataBuf = event.data.toString();
+  var data = JSON.parse(dataBuf);
+  context.log.info(data);
 
-  var recommendation = None;
-  if (event.data.balance > 100000) {
-    recommendation = "Consider investing in property!";
-  } else if (event.data.balance > 10000) {
-    recommendation = "Consider investing in shares!";
-  }
+  try {
+    var recommendation = null;
+    if (data.balance > 100000) {
+      recommendation = "Consider investing in property!";
+    } else if (data.balance > 10000) {
+      recommendation = "Consider investing in shares!";
+    }
   
-  if (recommendation) {
+    if (recommendation) {
+      var newUserMessage = {
+        userId: data.userId,
+        messageType: 'product_advice',
+        message: recommendation,
+        date: Date.now()
+      };
 
-    var newUserMessage = {
-      userId: event.data.userId,
-      messageType: 'product_advice',
-      message: recommendation,
-      date: Date.now()
-    };
+      const producer = kafka.producer();
 
-    const producer = kafka.producer();
-
-    await producer.connect();
-    await producer.send({
-      topic: kafka_notification_topic,
-      messages: [
-        { value: JSON.stringify(newUserMessage) }
-      ]
-    });
-    await producer.disconnect();
+      await producer.connect();
+      await producer.send({
+        topic: kafka_notification_topic,
+        messages: [
+          { value: JSON.stringify(newUserMessage) }
+        ]
+      });
+      await producer.disconnect();
+    }
+  } catch (err) {
+    context.log.error(err);
   }
   return { result: "ok" };
 }
