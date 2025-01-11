@@ -1,5 +1,23 @@
 const { CloudEvent } = require('cloudevents');
 
+
+const kafka_clientId = 'wealthwise-transact'
+const kafka_groupId = 'wealthwise-group'
+const kafka_transaction_topic = 'wealthwise-transactions'
+const kafka_notification_topic = 'wealthwise-user-notifications'
+const kafka_ledger_topic = 'wealthwise-ledger'
+const kafka_balance_update_topic = 'wealthwise-balance-update'
+
+const { Kafka } = require('kafkajs')
+
+const kafka = new Kafka({
+  clientId: kafka_clientId,
+  brokers: [process.env.KAFKA_BROKER],
+  ssl: false
+})
+
+
+
 /**
  * Your CloudEvent handling function, invoked with each request.
  * This example function logs its input, and responds with a CloudEvent
@@ -18,38 +36,24 @@ const { CloudEvent } = require('cloudevents');
  * See: https://github.com/knative/func/blob/main/docs/function-developers/nodejs.md#the-context-object
  * @param {CloudEvent} event the CloudEvent
  */
-
-const kafka_clientId = 'wealthwise-transact'
-const kafka_groupId = 'wealthwise-group'
-const kafka_transaction_topic = 'wealthwise-transactions'
-const kafka_notification_topic = 'wealthwise-user-notifications'
-const kafka_ledger_topic = 'wealthwise-ledger'
-const kafka_balance_update_topic = 'wealthwise-balance-update'
-
-const { Kafka } = require('kafkajs')
-
-const kafka = new Kafka({
-  clientId: kafka_clientId,
-  brokers: [process.env.KAFKA_BROKER],
-  ssl: false
-})
-
-
 const handle = async (context, event) => {
   // This function should be triggered by a Kafka event from the transactions topic
-  // event.data. will contain the Kafka data
+  // event is a CloudEvent. Kafka can handle any data, so we'll have to convert
+  // the event.data Buffer into an object via JSON.
+  //
   context.log.info("query", context.query);
   context.log.info("event", event);
   context.log.info(event);
-  context.log.info(event.data);
-  context.log.info(typeof event.data);
+  var dataBuf = event.data.toString();
+  var data = JSON.parse(dataBuf);
+  context.log.info(data);
 
   var recommendation = null;
-  if (event.data.type == 'expense') {
-    if (event.data.amount < 100) {
+  if (data.type == 'expense') {
+    if (data.amount < 100) {
       // Recommend a top-up saver
       recommendation = 'Consider a top-up saver account!';
-    } else if (event.data.amount > 2000 && event.data.vendor == 'bank') {
+    } else if (data.amount > 2000 && data.vendor == 'bank') {
       // Recommend a home loan evaluation
       recommendation = 'Consider a review of your current home loan provider'
     }
@@ -57,7 +61,7 @@ const handle = async (context, event) => {
       const producer = kafka.producer();
 
       var newMsg = {
-        userId: event.data.userId,
+        userId: data.userId,
         messageType: 'recommendation',
         message: recommendation,
         date: Date.now()
@@ -74,7 +78,5 @@ const handle = async (context, event) => {
     }
   }
   return { result: "ok" };
-}
-
-// Export the function
+};
 module.exports = { handle };

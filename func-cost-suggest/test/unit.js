@@ -2,29 +2,29 @@
 
 const func = require('..').handle;
 const test = require('tape');
+const { CloudEvent } = require('cloudevents');
 
-const fixture = { log: { info: console.log } };
+// Ensure that the function completes cleanly when passed a valid event.
+test('Unit: handles a valid event', async t => {
+  t.plan(4);
+  const data = {
+    name: 'tiger',
+    customerId: '01234'
+  }
 
-test('Unit: handles an HTTP GET', async t => {
-  t.plan(1);
-  // Invoke the function, which should complete without error.
-  const result = await func({ ...fixture, method: 'GET', query: { name: 'tiger' } });
-  t.deepEqual(result, { query: { name: 'tiger' } });
-  t.end();
-});
+  // A valid event includes id, type and source at a minimum.
+  const cloudevent = new CloudEvent({
+    id: '01234',
+    type: 'com.example.cloudevents.test',
+    source: '/test',
+    data
+  });
 
-test('Unit: handles an HTTP POST', async t => {
-  t.plan(1);
-  const body = { name: 'tiger' };
-  // Invoke the function, which should complete without error.
-  const result = await func({ ...fixture, method: 'POST', body }, body);
-  t.deepEqual(result, { body });
-  t.end();
-});
-
-test('Unit: responds with error code if neither GET or POST', async t => {
-  t.plan(1);
-  const result = await func(fixture);
-  t.deepEqual(result, { statusCode: 405, statusMessage: 'Method not allowed' });
+  // Invoke the function with the valid event, which should complete without error.
+  const result = await func({ log: { info: (_) => _ } }, cloudevent);
+  t.ok(result);
+  t.equal(result.data, data);
+  t.equal(result.type, 'echo');
+  t.equal(result.source, 'event.handler');
   t.end();
 });

@@ -22,6 +22,12 @@ const handle = async (context, event) => {
   // YOUR CODE HERE
   context.log.info("context", context);
   context.log.info("event", event);
+  context.log.info(event);
+  context.log.info(context);
+  var dataBuf = event.data.toString();
+  context.log.info(dataBuf);
+  var data = JSON.parse(dataBuf);
+  context.log.info(data);
 
   return new CloudEvent({
     source: 'event.handler',
