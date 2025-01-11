@@ -5,9 +5,22 @@ metadata:
   namespace: wealthwise
 spec:
   template:
+#    metadata:
+#      annotations:
+#        autoscaling.knative.dev/minScale: "1"
     spec:
       containers:
         - image: quay.io/rh-ee-dwaters/func-balance
           env:
             - name: KAFKA_BROKER
               value: kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+            - name: PGUSER
+              value: pguser
+            - name: PGPASSWORD
+              value: abc123
+            - name: PGHOST
+              value: postgresql
+            - name: PGDATABASE
+              value: wealthwise
+            - name: PGPORT
+              value: "5432"
