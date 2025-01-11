@@ -22,7 +22,7 @@ metadata:
   name: ks-wealthwise-transactions-to-balance
   namespace: wealthwise
 spec:
-  consumerGroup: knative-group
+  consumerGroup: knative-group-balance  # This needs to be a different group to the cost-suggest group
   bootstrapServers:
     - kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
   topics:
@@ -39,7 +39,7 @@ metadata:
   name: ks-wealthwise-balance-update-to-product-suggest
   namespace: wealthwise
 spec:
-  consumerGroup: knative-group
+  consumerGroup: knative-group-product
   bootstrapServers:
     - kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
   topics:

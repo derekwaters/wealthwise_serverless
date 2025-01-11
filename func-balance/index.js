@@ -1,5 +1,12 @@
 const { CloudEvent } = require('cloudevents');
 
+const { Client } = require('pg');
+
+const database_table_create = 'CREATE TABLE IF NOT EXISTS public.userbalance (userId integer, balance real)';
+const database_get_balance = 'SELECT balance from public.userbalance where userId = $1';
+const database_insert_balance = 'INSERT INTO public.userbalance VALUES ($1, $2)';
+const database_update_balance = 'UPDATE public.userbalance SET balance = $2 WHERE userId = $1';
+
 const kafka_clientId = 'wealthwise-transact'
 const kafka_groupId = 'wealthwise-group'
 const kafka_transaction_topic = 'wealthwise-transactions'
@@ -13,6 +20,13 @@ const kafka = new Kafka({
   brokers: [process.env.KAFKA_BROKER],
   ssl: false
 })
+
+// REQUIRED ENV VARS:
+// PGUSER
+// PGPASSWORD
+// PGHOST
+// PGPORT = 5432
+// PGDATABASE
 
 
 /**
@@ -47,31 +61,47 @@ const handle = async (context, event) => {
 
   // Get all the matching events
   var currentBalance = 0;
+  var addBalance = 0;
+  if (data.type == 'deposit') {
+    addBalance = data.amount;
+  } else if (data.type == 'expense') {
+    addBalance = -data.amount;
+  }
 
-  // Search through the transactions for anything affecting balance
-  const consumer = kafka.consumer({ groupId: kafka_groupId});
+  context.log.info("About to find current balance for " + data.userId);
+  const client = new Client({
+    ssl: false
+  });
+  context.log.info("About to connect to " + process.env.PGHOST);
+  await client.connect()
+  context.log.info("Connected...");
 
-  await consumer.connect();
-  await consumer.subscribe({ topic: kafka_transaction_topic, fromBeginning: true});
-
-  console.log.info("About to calculate balance for " + data.userId);
-
-  await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
-      if (message.value.userId == data.userId) {
-        console.log.info("Got a transaction:");
-        console.log.info(message);
-        if (message.value.type == 'deposit') {
-          currentBalance += message.value.amount;
-        } else if (message.value.type == 'expense') {
-          currentBalance -= message.value.amount;
-        }
-        console.log.info("   -> Running balance: " + currentBalance);
-      }
+  // Ensure the database table exists
+  try {
+    await client.query(database_table_create);
+  } catch (err) {
+    context.log.error(err);
+  }
+  // Then get the user's balance
+  try {
+    const result = await client.query(database_get_balance, [data.userId]);
+    context.log.info(result);
+    if (result.rowCount == 0) {
+      // No currentBalance yet!
+      currentBalance = addBalance;
+      await client.query(database_insert_balance, [data.userId, currentBalance]);
+    } else {
+      // Amend the balance
+      currentBalance = result.rows[0].balance;
+      currentBalance += addBalance;
+      await client.query(database_update_balance, [data.userId, currentBalance]);
     }
-  })
-
-  console.log.info("Total Balance: " + currentBalance);
+  } catch (err) {
+    context.log.error(err);
+  }
+  await client.end();
+  
+  context.log.info("Total Balance: " + currentBalance);
 
   // Add a notification message
   const producer = kafka.producer();
