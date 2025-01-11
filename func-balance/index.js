@@ -1,20 +1,4 @@
-/**
- * Your HTTP handling function, invoked with each request. This is an example
- * function that echoes its input to the caller, and returns an error if
- * the incoming request is something other than an HTTP POST or GET.
- *
- * In can be invoked with 'func invoke'
- * It can be tested with 'npm test'
- *
- * @param {Context} context a context object.
- * @param {object} context.body the request body if any
- * @param {object} context.query the query string deserialized as an object, if any
- * @param {object} context.log logging object with methods for 'info', 'warn', 'error', etc.
- * @param {object} context.headers the HTTP request headers
- * @param {string} context.method the HTTP request method
- * @param {string} context.httpVersion the HTTP protocol version
- * See: https://github.com/knative/func/blob/main/docs/function-developers/nodejs.md#the-context-object
- */
+const { CloudEvent } = require('cloudevents');
 
 const kafka_clientId = 'wealthwise-transact'
 const kafka_groupId = 'wealthwise-group'
@@ -31,11 +15,35 @@ const kafka = new Kafka({
 })
 
 
+/**
+ * Your CloudEvent handling function, invoked with each request.
+ * This example function logs its input, and responds with a CloudEvent
+ * which echoes the incoming event data
+ *
+ * It can be invoked with 'func invoke'
+ * It can be tested with 'npm test'
+ *
+ * @param {Context} context a context object.
+ * @param {object} context.body the request body if any
+ * @param {object} context.query the query string deserialzed as an object, if any
+ * @param {object} context.log logging object with methods for 'info', 'warn', 'error', etc.
+ * @param {object} context.headers the HTTP request headers
+ * @param {string} context.method the HTTP request method
+ * @param {string} context.httpVersion the HTTP protocol version
+ * See: https://github.com/knative/func/blob/main/docs/function-developers/nodejs.md#the-context-object
+ * @param {CloudEvent} event the CloudEvent
+ */
 const handle = async (context, event) => {
   // This function should be triggered by a Kafka event from the transactions topic
-  // event.data. will contain the Kafka data
+  // event is a CloudEvent. Kafka can handle any data, so we'll have to convert
+  // the event.data Buffer into an object via JSON.
+  //
   context.log.info("query", context.query);
   context.log.info("event", event);
+  context.log.info(event);
+  var dataBuf = event.data.toString();
+  var data = JSON.parse(dataBuf);
+  context.log.info(data);
 
   // Get all the matching events
   var currentBalance = 0;
@@ -46,29 +54,36 @@ const handle = async (context, event) => {
   await consumer.connect();
   await consumer.subscribe({ topic: kafka_transaction_topic, fromBeginning: true});
 
+  console.log.info("About to calculate balance for " + data.userId);
+
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      if (message.value.userId == body.userId) {
-        if (message.type == 'deposit') {
-          currentBalance += message.amount;
-        } else if (message.type == 'expense') {
-          currentBalance -= message.amount;
+      if (message.value.userId == data.userId) {
+        console.log.info("Got a transaction:");
+        console.log.info(message);
+        if (message.value.type == 'deposit') {
+          currentBalance += message.value.amount;
+        } else if (message.value.type == 'expense') {
+          currentBalance -= message.value.amount;
         }
+        console.log.info("   -> Running balance: " + currentBalance);
       }
     }
   })
+
+  console.log.info("Total Balance: " + currentBalance);
 
   // Add a notification message
   const producer = kafka.producer();
 
   var newNotification = {
-    userId: event.data.userId,
+    userId: data.userId,
     messageType: 'balance',
     balance: currentBalance,
     date: Date.now()
   };
   var newBalance = {
-    userId: event.data.userId,
+    userId: data.userId,
     balance: currentBalance
   };
 

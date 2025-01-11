@@ -2,16 +2,50 @@
 apiVersion: sources.knative.dev/v1beta1
 kind: KafkaSource
 metadata:
-  name: ks-
+  name: ks-wealthwise-transactions-to-cost-suggest
   namespace: wealthwise
 spec:
   consumerGroup: knative-group
   bootstrapServers:
     - kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
   topics:
-    - test-topic
+    - wealthwise-transactions
   sink:
     ref:
       apiVersion: serving.knative.dev/v1
       kind: Service
-      name: test-events
+      name: wealthwise-cost-suggest
+---
+apiVersion: sources.knative.dev/v1beta1
+kind: KafkaSource
+metadata:
+  name: ks-wealthwise-transactions-to-balance
+  namespace: wealthwise
+spec:
+  consumerGroup: knative-group
+  bootstrapServers:
+    - kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+  topics:
+    - wealthwise-transactions
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: wealthwise-balance
+---
+apiVersion: sources.knative.dev/v1beta1
+kind: KafkaSource
+metadata:
+  name: ks-wealthwise-balance-update-to-product-suggest
+  namespace: wealthwise
+spec:
+  consumerGroup: knative-group
+  bootstrapServers:
+    - kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+  topics:
+    - wealthwise-balance-update
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: wealthwise-product-suggest
