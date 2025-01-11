@@ -51,6 +51,9 @@ const handle = async (context, event) => {
     }
   
     if (recommendation) {
+
+      context.log.info("Got a recommendation: " + recommendation);
+
       var newUserMessage = {
         userId: data.userId,
         messageType: 'product_advice',
