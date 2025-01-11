@@ -48,35 +48,72 @@ You should now be able to push stuff to Kafka using tests/generate-kafka-events.
 And they should be received by the events service?
 
 
+
+
+
+
 Scaleup the Machineset Count to add a new worker node...
+
+13) Create a postgresql database with storage (Developer -> +Add -> database -> postgresql) -> username = 'pguser', password = 'abc123', otherwise defaults.
+
+
+
+
+
 # DON'T DO ANY OF THIS - USE THE KNative Kafka CR you idiot
-# 
+#
 # Add the Kafka eventing source:
 # https://knative.dev/docs/eventing/sources/kafka-source/
-# 
+#
 # oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-controller.yaml
 # oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-source.yaml
 # oc apply -f https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-v1.16.1/eventing-kafka-channel.yaml
 # oc get deployments.apps,statefulsets.apps -n knative-eventing
-# 
+#
 # oc adm policy add-scc-to-user privileged system:serviceaccount:knative-eventing:knative-kafka-source-data-plane
 # oc adm policy add-scc-to-user privileged system:serviceaccount:knative-eventing:knative-kafka-channel-data-plane
-# 
+#
 # Edit the StatefulSet for the kafka-source-dispatcher, kafka-channel-dispatcher, Deployments for kafka-channel-receiver and add:
 # spec:
 #     template:
 #         metadata:
 #             annotations:
 #                 openshift.io/required-scc: "privileged"
-# 
-# 
-
-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+#
+#
 
 
-// Now run a thing to send a thing
-// 
+// Let's listen to our three Kafka topics
 
-kubectl -n wealthwise run kafka-producer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic test-topic
+kubectl -n wealthwise run kafka-consumer-transactions -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic wealthwise-transactions
 
-kubectl -n wealthwise run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic test-topic
+kubectl -n wealthwise run kafka-consumer-notifications -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic wealthwise-user-notifications
+
+kubectl -n wealthwise run kafka-consumer-balance -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic wealthwise-balance-updates
+
+
+// Let's try a deposit
+// Verify that you see an event in wealthwise-transactions topic
+//
+curl -d '{"userId":123,"type":"deposit","amount":1234.56,"vendor":"employer"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+
+// Now an expense
+//
+curl -d '{"userId":123,"type":"expense","amount":500.00,"vendor":"bills"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+// We can see transactions, but nothing in notifications? Oh right, our cost function only posts for small expenses or large bank expenses!
+curl -d '{"userId":123,"type":"expense","amount":5.50,"vendor":"cafe"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+// Now we got something!
+
+curl -d '{"userId":123,"type":"expense","amount":2500.00,"vendor":"bank"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+// And again!
+
+// Check that we see balance updates
+// OK, let's get our balance up
+
+curl -d '{"userId":123,"type":"deposit","amount":10000.0,"vendor":"bonus"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+
+// Check notifications for a "shares" recommendation
+
+curl -d '{"userId":123,"type":"deposit","amount":200000.0,"vendor":"inheritance"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+
+// Check notifications for a "property" recommendation
