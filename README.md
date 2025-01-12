@@ -117,3 +117,27 @@ curl -d '{"userId":123,"type":"deposit","amount":10000.0,"vendor":"bonus"}' -H "
 curl -d '{"userId":123,"type":"deposit","amount":200000.0,"vendor":"inheritance"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
 
 // Check notifications for a "property" recommendation
+
+
+
+
+
+Tips for young players:
+
+The command line build params (architecture, registry, s2i) can be specified in func.yaml rather than adding them on the command line each time
+Read the @#$%ing manual! (Install the KNativeKafka resource rather than trying to deploy it yourself :-( )
+Comments in kn func templates aren't always 100% accurate
+BuildTemplates in OpenShift don't seem to be working currently?
+Format of messages for the kafkajs interface is important (need to specify <obj>.value = "some data")
+Learn about the CloudEvents interface - Kafka "messages" can be anything, so you'll just get a buffer of bytes (which you'll have to convert to JSON)
+context.log.info not console.log!
+Get comfortable with kubectl run quay.io/strimzi/kafka to produce and consume Kafka messages
+While testing, use:
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "2"
+ so you can have a long-running log
+Check and make sure that docker containers have internet access, otherwise it appears that the build works, but it really doesn't...
+Add good error handling, otherwise the faas- logging thing doesn't give you much info other than that "user function failed"
