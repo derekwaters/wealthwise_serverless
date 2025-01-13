@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Account Transactions</title>
+<style>
+body {
+    font-family: sans-serif;
+}
+#notifications {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 200px; /* Added max-height for scrollbar */
+    overflow-y: auto; /* Added scrollbar when content overflows */
+}
+.notification {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 3px;
+}
+.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+</style>
+</head>
+<body>
+
+<h1>Account Transactions</h1>
+
+<h2>Deposit</h2>
+<form id="depositForm">
+    Amount: <input type="number" id="depositAmount" required><br>
+    Source:
+    <select id="depositSource">
+        <option value="Salary">Salary</option>
+        <option value="Investment">Investment</option>
+        <option value="Gift">Gift</option>
+        <option value="Other">Other</option>
+    </select><br>
+    <button type="submit">Submit Deposit</button>
+</form>
+
+<h2>Expense</h2>
+<form id="expenseForm">
+    Amount: <input type="number" id="expenseAmount" required><br>
+    Vendor:
+    <select id="expenseVendor">
+        <option value="Groceries">Groceries</option>
+        <option value="Rent">Rent</option>
+        <option value="Utilities">Utilities</option>
+        <option value="Entertainment">Entertainment</option>
+        <option value="Other">Other</option>
+    </select><br>
+    <button type="submit">Submit Expense</button>
+</form>
+
+<h2>Notifications</h2>
+<div id="notifications">
+</div>
+
+<script>
+const depositForm = document.getElementById('depositForm');
+const expenseForm = document.getElementById('expenseForm');
+const notifications = document.getElementById('notifications');
+
+const API_ENDPOINT = 'YOUR_API_ENDPOINT'; // Replace with your actual API endpoint
+
+// Example usage:
+const NOTIFICATION_API_ENDPOINT = 'YOUR_NOTIFICATION_API_ENDPOINT'; // Replace with your API endpoint
+const POLLING_INTERVAL = 5000; // Poll every 5 seconds
+
+
+function addNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.classList.add('notification', type);
+    notification.textContent = message;
+    notifications.appendChild(notification);
+    // Automatically scroll to bottom to show new notifications
+    notifications.scrollTop = notifications.scrollHeight;
+}
+
+async function makeApiRequest(url, method, data) {
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json(); // Try to get error message from API
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json(); // Parse response if successful
+    } catch (error) {
+        addNotification(`API Error: ${error.message}`, "error");
+        throw error; // Re-throw to be caught by the caller
+    }
+}
+
+depositForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const amount = parseFloat(document.getElementById('depositAmount').value);
+    const source = document.getElementById('depositSource').value;
+
+    if (isNaN(amount) || amount <= 0) {
+        addNotification("Invalid deposit amount.", "error");
+        return;
+    }
+
+    try {
+        const response = await makeApiRequest(`${API_ENDPOINT}`, 'POST', { "type": "deposit", "amount": amount, "vendor": source });
+        addNotification(`Deposit of $${amount} from ${source} submitted. Response: ${JSON.stringify(response)}`, "success");
+        depositForm.reset();
+    } catch (error) {
+        // Error is already handled inside makeApiRequest
+    }
+});
+
+expenseForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const amount = parseFloat(document.getElementById('expenseAmount').value);
+    const vendor = document.getElementById('expenseVendor').value;
+
+    if (isNaN(amount) || amount <= 0) {
+        addNotification("Invalid expense amount.", "error");
+        return;
+    }
+
+    try {
+        const response = await makeApiRequest(`${API_ENDPOINT}`, 'POST', { "type": "expense", "amount": amount, "vendor": vendor });
+        addNotification(`Expense of $${amount} to ${vendor} submitted. Response: ${JSON.stringify(response)}`, "success");
+        expenseForm.reset();
+    } catch (error) {
+        // Error is already handled inside makeApiRequest
+    }
+});
+
+async function fetchNotifications(apiEndpoint) {
+    try {
+        const response = await fetch(apiEndpoint);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+        return await response.json(); // Assuming the API returns JSON
+    } catch (error) {
+        console.error("Error fetching notifications:", error); // Log the error to the console
+        return []; // Return an empty array to avoid breaking the loop
+    }
+}
+
+function setupNotificationPolling(apiEndpoint, interval, notificationDisplayFunction) {
+    let timerId;
+
+    async function pollForNotifications() {
+        try {
+            const notifications = await fetchNotifications(apiEndpoint);
+            if (notifications && Array.isArray(notifications)) {
+                notificationDisplayFunction(notifications); // Display the notifications
+            } else {
+                console.warn("Invalid notification data received from API:", notifications);
+            }
+
+        } catch (error) {
+            // Error is already logged in fetchNotifications, no need to log again here
+        }
+    }
+
+    // Initial poll
+    pollForNotifications();
+
+    // Set up the interval timer
+    timerId = setInterval(pollForNotifications, interval);
+
+    // Return a function to stop the polling if needed
+    return function stopNotificationPolling() {
+        clearInterval(timerId);
+    };
+}
+
+function displayNotifications(notifications) {
+    notifications.forEach(notification => {
+        addNotification(notification.message, notification.type);
+    });
+}
+
+const stopPolling = setupNotificationPolling(NOTIFICATION_API_ENDPOINT, POLLING_INTERVAL, displayNotifications);
+
+// To stop the polling later:
+// setTimeout(() => {
+//   stopPolling();
+//   console.log("Notification polling stopped.");
+// }, 30000); // Stop after 30 seconds (example)
+
+
+
+</script>
+
+</body>
+</html>
