@@ -35,7 +35,7 @@ body {
 <h2>Backend</h2>
 <form id="backendForm">
     User Id: <input type="string" id="userId" required><br>
-    Endpoint: <input type="string" length="200" id="endpointUrl" required><br>
+    Endpoint Base: <input type="string" length="200" id="endpointUrl" required><br>
 </form>
 
 
@@ -78,7 +78,7 @@ const notifications = document.getElementById('notifications');
 const API_ENDPOINT = 'https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com'; // Replace with your actual API endpoint
 
 // Example usage:
-const NOTIFICATION_API_ENDPOINT = 'YOUR_NOTIFICATION_API_ENDPOINT'; // Replace with your API endpoint
+const NOTIFICATION_API_ENDPOINT = 'https://wealthwise-check-notifications-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com'; // Replace with your API endpoint
 const POLLING_INTERVAL = 5000; // Poll every 5 seconds
 
 
@@ -157,7 +157,15 @@ expenseForm.addEventListener('submit', async (event) => {
 
 async function fetchNotifications(apiEndpoint) {
     try {
-        const response = await fetch(apiEndpoint);
+        const userId = document.getElementById('userId').value;
+        const data = { userId: userId };
+        const response = await fetch(apiEndpoint, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -174,11 +182,15 @@ function setupNotificationPolling(apiEndpoint, interval, notificationDisplayFunc
 
     async function pollForNotifications() {
         try {
-            const notifications = await fetchNotifications(apiEndpoint);
-            if (notifications && Array.isArray(notifications)) {
-                notificationDisplayFunction(notifications); // Display the notifications
-            } else {
-                console.warn("Invalid notification data received from API:", notifications);
+            console.log("Checking for notifications at " + apiEndpoint);
+            const notificationData = await fetchNotifications(apiEndpoint);
+            if (notificationData.status == "ok") {
+                const notifications = notificationData.notifications;
+                if (notifications && Array.isArray(notifications)) {
+                    notificationDisplayFunction(notifications); // Display the notifications
+                } else {
+                    console.warn("Invalid notification data received from API:", notifications);
+                }
             }
 
         } catch (error) {
@@ -200,7 +212,7 @@ function setupNotificationPolling(apiEndpoint, interval, notificationDisplayFunc
 
 function displayNotifications(notifications) {
     notifications.forEach(notification => {
-        addNotification(notification.message, notification.type);
+        addNotification((notification.message || "...") + JSON.stringify(notification), notification.type);
     });
 }
 

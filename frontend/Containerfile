@@ -1,0 +1,20 @@
+FROM registry.access.redhat.com/ubi8/ubi:latest
+
+LABEL org.opencontainers.image.authors="derek@frisbeeworld.com"
+
+ENV PORT=8080
+
+RUN dnf install -y httpd && \
+    dnf clean all
+
+RUN sed -ri -e "/^Listen 80/c\Listen ${PORT}" /etc/httpd/conf/httpd.conf
+
+COPY html/ /var/www/html/ 
+
+RUN chmod -R +r /var/www/html && \
+    chgrp -R 0 /var/log/httpd /var/run/httpd && \
+    chmod -R g=u /var/log/httpd /var/run/httpd
+
+USER 1001
+
+CMD ["httpd", "-D", "FOREGROUND"]
