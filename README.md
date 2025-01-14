@@ -54,7 +54,7 @@ And they should be received by the events service?
 
 Scaleup the Machineset Count to add a new worker node...
 
-13) Create a postgresql database with storage (Developer -> +Add -> database -> postgresql) -> username = 'pguser', password = 'abc123', otherwise defaults.
+13) Create a postgresql database with storage (Developer -> +Add -> database -> postgresql) -> username = 'pguser', password = 'abc123', database name  = 'wealthwise' otherwise defaults.
 
 
 
@@ -89,32 +89,32 @@ kubectl -n wealthwise run kafka-consumer-transactions -ti --image=quay.io/strimz
 
 kubectl -n wealthwise run kafka-consumer-notifications -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic wealthwise-user-notifications
 
-kubectl -n wealthwise run kafka-consumer-balance -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic wealthwise-balance-updates
+kubectl -n wealthwise run kafka-consumer-balance -ti --image=quay.io/strimzi/kafka:0.26.1-kafka-3.0.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092 --topic wealthwise-balance-update
 
 
 // Let's try a deposit
 // Verify that you see an event in wealthwise-transactions topic
 //
-curl -d '{"userId":123,"type":"deposit","amount":1234.56,"vendor":"employer"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+curl -d '{"userId":123,"type":"deposit","amount":1234.56,"vendor":"employer"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com
 
 // Now an expense
 //
-curl -d '{"userId":123,"type":"expense","amount":500.00,"vendor":"bills"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+curl -d '{"userId":123,"type":"expense","amount":500.00,"vendor":"bills"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com
 // We can see transactions, but nothing in notifications? Oh right, our cost function only posts for small expenses or large bank expenses!
-curl -d '{"userId":123,"type":"expense","amount":5.50,"vendor":"cafe"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+curl -d '{"userId":123,"type":"expense","amount":5.50,"vendor":"cafe"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com
 // Now we got something!
 
-curl -d '{"userId":123,"type":"expense","amount":2500.00,"vendor":"bank"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+curl -d '{"userId":123,"type":"expense","amount":2500.00,"vendor":"bank"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com
 // And again!
 
 // Check that we see balance updates
 // OK, let's get our balance up
 
-curl -d '{"userId":123,"type":"deposit","amount":10000.0,"vendor":"bonus"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+curl -d '{"userId":123,"type":"deposit","amount":20000.0,"vendor":"bonus"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com
 
 // Check notifications for a "shares" recommendation
 
-curl -d '{"userId":123,"type":"deposit","amount":200000.0,"vendor":"inheritance"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-pp57d.pp57d.sandbox2287.opentlc.com
+curl -d '{"userId":123,"type":"deposit","amount":200000.0,"vendor":"inheritance"}' -H "Content-Type: application/json" -X POST https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com
 
 // Check notifications for a "property" recommendation
 

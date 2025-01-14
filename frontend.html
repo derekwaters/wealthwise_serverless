@@ -32,6 +32,13 @@ body {
 
 <h1>Account Transactions</h1>
 
+<h2>Backend</h2>
+<form id="backendForm">
+    User Id: <input type="string" id="userId" required><br>
+    Endpoint: <input type="string" length="200" id="endpointUrl" required><br>
+</form>
+
+
 <h2>Deposit</h2>
 <form id="depositForm">
     Amount: <input type="number" id="depositAmount" required><br>
@@ -68,7 +75,7 @@ const depositForm = document.getElementById('depositForm');
 const expenseForm = document.getElementById('expenseForm');
 const notifications = document.getElementById('notifications');
 
-const API_ENDPOINT = 'YOUR_API_ENDPOINT'; // Replace with your actual API endpoint
+const API_ENDPOINT = 'https://wealthwise-transact-wealthwise.apps.cluster-brx4j.brx4j.sandbox645.opentlc.com'; // Replace with your actual API endpoint
 
 // Example usage:
 const NOTIFICATION_API_ENDPOINT = 'YOUR_NOTIFICATION_API_ENDPOINT'; // Replace with your API endpoint
@@ -110,6 +117,7 @@ depositForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const amount = parseFloat(document.getElementById('depositAmount').value);
     const source = document.getElementById('depositSource').value;
+    const userId = document.getElementById('userId').value;
 
     if (isNaN(amount) || amount <= 0) {
         addNotification("Invalid deposit amount.", "error");
@@ -117,7 +125,8 @@ depositForm.addEventListener('submit', async (event) => {
     }
 
     try {
-        const response = await makeApiRequest(`${API_ENDPOINT}`, 'POST', { "type": "deposit", "amount": amount, "vendor": source });
+        const apiEndpoint = document.getElementById('endpointUrl').value;
+        const response = await makeApiRequest(apiEndpoint, 'POST', { "userId": userId, "type": "deposit", "amount": amount, "vendor": source });
         addNotification(`Deposit of $${amount} from ${source} submitted. Response: ${JSON.stringify(response)}`, "success");
         depositForm.reset();
     } catch (error) {
@@ -129,6 +138,7 @@ expenseForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const amount = parseFloat(document.getElementById('expenseAmount').value);
     const vendor = document.getElementById('expenseVendor').value;
+    const userId = document.getElementById('userId').value;
 
     if (isNaN(amount) || amount <= 0) {
         addNotification("Invalid expense amount.", "error");
@@ -136,7 +146,8 @@ expenseForm.addEventListener('submit', async (event) => {
     }
 
     try {
-        const response = await makeApiRequest(`${API_ENDPOINT}`, 'POST', { "type": "expense", "amount": amount, "vendor": vendor });
+        const apiEndpoint = document.getElementById('endpointUrl').value;
+        const response = await makeApiRequest(apiEndpoint, 'POST', { "userId": userId, "type": "expense", "amount": amount, "vendor": vendor });
         addNotification(`Expense of $${amount} to ${vendor} submitted. Response: ${JSON.stringify(response)}`, "success");
         expenseForm.reset();
     } catch (error) {
