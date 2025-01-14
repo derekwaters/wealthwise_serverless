@@ -5,3 +5,9 @@ registry: quay.io/rh-ee-dwaters
 created: 2025-01-08T12:58:25.316280649+11:00
 build:
   builder: s2i
+  buildEnvs:
+    - name: IGNORE_THIS
+      value: 'just needed to Function Build works'
+  envs:
+    - name: ALSO_IGNORE_THIS
+      value: 'just a bug workaround'
