@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wealthwise-frontend-deployment
+spec:
+  selector:
+    matchLabels:
+      app: wealthwise
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: wealthwise
+    spec:
+      containers:
+        - name: wealthwise-frontend
+          image: quay.io/rh-ee-dwaters/func-frontend
+          ports:
+            - containerPort: 8080
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: wealthwise-frontend-service
+spec:
+  selector:
+    app: wealthwise
+  ports:
+    - protocol: TCP
+      targetPort: 8080
+      port: 8080
+  type: LoadBalancer
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: route-wealthwise
+spec:
+  path: /
+  to:
+    name: wealthwise-fronend-service
+    weight: 100
+    kind: Service
+  host: ''
+  port:
+    targetPort: 8080
+  alternateBackends: []

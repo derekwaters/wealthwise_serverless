@@ -74,10 +74,14 @@ const depositForm = document.getElementById('depositForm');
 const expenseForm = document.getElementById('expenseForm');
 const notifications = document.getElementById('notifications');
 
-const API_ENDPOINT = 'https://wealthwise-transact-wealthwise.svc.cluster.local';
+const frontendUrl = new URL(window.location.href);
+const hostnameBits = frontendUrl.hostname.split('.');
+const baseDomain = hostnameBits.slice(1).join('.');
+
+const API_ENDPOINT = 'https://wealthwise-transact-wealthwise.' + baseDomain;
 
 // Example usage:
-const NOTIFICATION_API_ENDPOINT = 'https://wealthwise-check-notifications-wealthwise.svc.cluster.local';
+const NOTIFICATION_API_ENDPOINT = 'https://wealthwise-check-notifications-wealthwise.' + baseDomain;
 const POLLING_INTERVAL = 5000; // Poll every 5 seconds
 
 
