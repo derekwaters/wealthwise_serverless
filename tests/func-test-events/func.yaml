@@ -6,3 +6,9 @@ created: 2025-01-08T12:58:41.2309982+11:00
 invoke: cloudevent
 build:
   builder: s2i
+  buildEnvs:
+    - name: IGNORE_THIS
+      value: 'just needed to Function Build works'
+  envs:
+    - name: ALSO_IGNORE_THIS
+      value: 'just a bug workaround'
