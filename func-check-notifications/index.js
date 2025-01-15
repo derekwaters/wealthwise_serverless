@@ -1,3 +1,17 @@
+
+const { Client } = require('pg');
+
+const database_table_create = 'CREATE TABLE IF NOT EXISTS public.usernotifications (userId integer, date bigint, data text)';
+const database_get_notifications = 'SELECT data from public.usernotifications where userId = $1 and date > $2 ORDER BY date ASC';
+const database_clear_notifications = 'DELETE from public.usernotifications where userId = $1';
+
+// REQUIRED ENV VARS:
+// PGUSER
+// PGPASSWORD
+// PGHOST
+// PGPORT = 5432
+// PGDATABASE
+
 /**
  * Your HTTP handling function, invoked with each request. This is an example
  * function that echoes its input to the caller, and returns an error if
@@ -16,53 +30,48 @@
  * See: https://github.com/knative/func/blob/main/docs/function-developers/nodejs.md#the-context-object
  */
 
-const kafka_clientId = 'wealthwise-transact'
-const kafka_groupId = 'wealthwise-group'
-const kafka_transaction_topic = 'wealthwise-transactions'
-const kafka_notification_topic = 'wealthwise-user-notifications'
-const kafka_ledger_topic = 'wealthwise-ledger'
-const kafka_balance_update_topic = 'wealthwise-balance-update'
-
-const { Kafka } = require('kafkajs')
-
-const kafka = new Kafka({
-  clientId: kafka_clientId,
-  brokers: [process.env.KAFKA_BROKER],
-  ssl: false
-})
-
 const handle = async (context, event) => {
   // This function should be called directly from a POST request (with a userId)
-  context.log.info("query", context.query);
-  context.log.info("event", event);
-
-  context.log.info("query", context.query);
-  context.log.info("context", context);
   context.log.info(context);
-  context.log.info("Using Kafka Broker: " + process.env.KAFKA_BROKER);
 
 
   // If the request is an HTTP POST, the context will contain the request body
   if (context.method === 'POST') {
     var userId = context.body.userId;
     // Should use a topic per userId, but I'm too lazy to do so now
-    var fromDate = context.body.fromDate;
+    var fromDate = context.body.fromDate || 0;
     var newMessages = [];
 
-    // Search through the transactions for anything affecting balance
-    const consumer = kafka.consumer({ groupId: kafka_groupId});
+    const client = new Client({
+      ssl: false
+    });
+    context.log.info("About to connect to " + process.env.PGHOST);
+    await client.connect()
+    context.log.info("Connected...");
+  
+    // Ensure the database table exists
+    try {
+      await client.query(database_table_create);
+    } catch (err) {
+      context.log.error(err);
+    }
+    // Then get the user's balance
+    try {
+      const result = await client.query(database_get_notifications, [userId, fromDate]);
+      context.log.info(result);
+      result.rows.forEach((rowData) => {
+        newMessages.push(JSON.parse(rowData.data));
+      });
 
-    await consumer.connect();
-    await consumer.subscribe({ topic: kafka_notification_topic, fromBeginning: true});
+      await client.query(database_clear_notifications, [userId]);
+      
+    } catch (err) {
+      context.log.error(err);
+    }
+    await client.end();
+    
+    // Now delete them
 
-    await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
-        if (message.value.userId == userId &&
-            message.value.date > fromDate) {
-          newMessages.push(message.value);
-        }
-      }
-    })
 
     return {
       status: "ok",
