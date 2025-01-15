@@ -11,3 +11,13 @@ spec:
           env:
             - name: KAFKA_BROKER
               value: kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+            - name: PGUSER
+              value: pguser
+            - name: PGPASSWORD
+              value: abc123
+            - name: PGHOST
+              value: postgresql
+            - name: PGDATABASE
+              value: wealthwise
+            - name: PGPORT
+              value: "5432"
