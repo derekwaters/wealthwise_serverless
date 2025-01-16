@@ -13,6 +13,20 @@ body {
     max-height: 200px; /* Added max-height for scrollbar */
     overflow-y: auto; /* Added scrollbar when content overflows */
 }
+#balanceUpdates {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 200px; /* Added max-height for scrollbar */
+    overflow-y: auto; /* Added scrollbar when content overflows */
+}
+#suggestions {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 200px; /* Added max-height for scrollbar */
+    overflow-y: auto; /* Added scrollbar when content overflows */
+}
 .notification {
     margin-bottom: 5px;
     padding: 5px;
@@ -26,6 +40,14 @@ body {
     background-color: #f8d7da;
     color: #721c24;
 }
+.balanceUpdate {
+    background-color: #f8d7f8;
+    color: #721c72;
+}
+.suggestion {
+    background-color: #dad7f8;
+    color: #241c72;
+}
 </style>
 </head>
 <body>
@@ -37,42 +59,51 @@ body {
     User Id: <input type="string" id="userId" required><br>
 </form>
 
-
-<h2>Deposit</h2>
 <form id="depositForm">
-    Amount: <input type="number" id="depositAmount" required><br>
+    Amount: <input type="number" step="0.01" id="depositAmount" required>
     Source:
     <select id="depositSource">
         <option value="Salary">Salary</option>
         <option value="Investment">Investment</option>
         <option value="Gift">Gift</option>
         <option value="Other">Other</option>
-    </select><br>
+    </select>
     <button type="submit">Submit Deposit</button>
 </form>
 
 <h2>Expense</h2>
 <form id="expenseForm">
-    Amount: <input type="number" id="expenseAmount" required><br>
+    Amount: <input type="number" step="0.01" id="expenseAmount" required>
     Vendor:
     <select id="expenseVendor">
         <option value="Groceries">Groceries</option>
         <option value="Rent">Rent</option>
         <option value="Utilities">Utilities</option>
         <option value="Entertainment">Entertainment</option>
+        <option value="bank">Home Loan</option>
         <option value="Other">Other</option>
-    </select><br>
+    </select>
     <button type="submit">Submit Expense</button>
 </form>
 
-<h2>Notifications</h2>
+<h2>Messages</h2>
 <div id="notifications">
+</div>
+
+<h2>Balance Updates</h2>
+<div id="balanceUpdates">
+</div>
+
+<h2>Suggestions</h2>
+<div id="suggestions">
 </div>
 
 <script>
 const depositForm = document.getElementById('depositForm');
 const expenseForm = document.getElementById('expenseForm');
 const notifications = document.getElementById('notifications');
+const balanceUpdates = document.getElementById('balanceUpdates');
+const suggestions = document.getElementById('suggestions');
 
 const frontendUrl = new URL(window.location.href);
 const hostnameBits = frontendUrl.hostname.split('.');
@@ -85,13 +116,16 @@ const NOTIFICATION_API_ENDPOINT = 'https://wealthwise-check-notifications-wealth
 const POLLING_INTERVAL = 5000; // Poll every 5 seconds
 
 
-function addNotification(message, type) {
+function addNotification(message, type, intoList) {
+    if (!intoList) {
+        intoList = notifications;
+    }
     const notification = document.createElement('div');
     notification.classList.add('notification', type);
     notification.textContent = message;
-    notifications.appendChild(notification);
+    intoList.appendChild(notification);
     // Automatically scroll to bottom to show new notifications
-    notifications.scrollTop = notifications.scrollHeight;
+    intoList.scrollTop = intoList.scrollHeight;
 }
 
 async function makeApiRequest(url, method, data) {
@@ -213,7 +247,17 @@ function setupNotificationPolling(apiEndpoint, interval, notificationDisplayFunc
 
 function displayNotifications(notifications) {
     notifications.forEach(notification => {
-        addNotification((notification.message || "...") + JSON.stringify(notification), notification.type);
+        switch (notification.messageType) {
+            case 'balance':
+                addNotification('Account Balance is now $' + notification.balance + ' [' + JSON.stringify(notification) + ']', 'balanceUpdate', balanceUpdates);
+                break;
+            case 'recommendation':
+            case 'product_advice':
+                addNotification(notification.message + ' [' + JSON.stringify(notification) + ']', 'suggestion', suggestions);
+                break;
+            default:
+                addNotification('Unknown Notification Type: ' + JSON.stringify(notification), 'error', notifications);
+        }
     });
 }
 

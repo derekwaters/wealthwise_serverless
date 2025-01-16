@@ -29,7 +29,7 @@ spec:
   ports:
     - protocol: TCP
       targetPort: 8080
-      port: 8080
+      port: 80
   type: LoadBalancer
 ---
 apiVersion: route.openshift.io/v1
@@ -39,7 +39,7 @@ metadata:
 spec:
   path: /
   to:
-    name: wealthwise-fronend-service
+    name: wealthwise-frontend-service
     weight: 100
     kind: Service
   host: ''
